@@ -1,7 +1,12 @@
 <template>
-  <Tutorial/>
+  <div>
+    <HomeBackground/>
+    <Tutorial/>
+  </div>
 </template>
 
 <script>
-export default {}
+  export default {
+    
+  }
 </script>
