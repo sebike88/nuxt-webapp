@@ -10,7 +10,7 @@
 <script>
   import * as THREE from 'three/build/three.module';
   import * as TWEEN from "@tweenjs/tween.js";
-  import debounce from 'lodash.debounce';
+  // import debounce from 'lodash.debounce';
 
   import { AdditiveBlending } from 'three';
 
@@ -39,7 +39,7 @@
       this.particles();
       window.addEventListener('resize', this.onWindowResize);
       document.body.addEventListener( 'pointermove', this.onPointerMove );
-      document.addEventListener('scroll', debounce(this.scrollEvent, 500));
+      document.addEventListener('scroll', this.scrollEvent);
     },
     methods: {
       scrollEvent(event) {
@@ -51,83 +51,70 @@
           ) * 100;
 
         this.playScrollAnimations();
-
+        console.log('scroll')
       },
       addAnimationScripts() {
         //  add an animation that moves the cube through first 40 percent of scroll
         this.animationScripts.push({
             start: 0,
-            end: 10,
+            end: 5,
             func: () => {
+              new TWEEN.Tween(this.sceneCenter)
+              .to({
+                x: 0,
+                y: 0,
+                z: 0,
+              }, 1500)
+              .easing( TWEEN.Easing.Quartic.InOut ).start();
+
               new TWEEN.Tween(this.camera)
               .to({
                 position: {
-                  x: 1,
-                  y: 1,
-                  z: 2,
+                  x: 0,
+                  y: 0,
+                  z: 1.5,
                 }
-              }, 800)
-              .easing(TWEEN.Easing.Cubic.Out)
-              .onUpdate(() => {
-                // this.camera.updateProjectionMatrix()
-                // const percentage = this.lerp(0, 5, this.scalePercent(60, 80)) * 0.000001;
-                // console.log(percentage)
-                // this.camera.position.x = this.lerp(0, 5, this.scalePercent(60, 80))
-                // this.camera.position.set(this.lerp(0, 5, this.scalePercent(60, 80)), 1, 2);
-                // this.camera.position.set(coords.x, coords.y, 3);
-                // this.camera.position.x = this.lerp(0, 5, this.scalePercent(60, 80))
-              })
-              .start();
+              }, 1500)
+              .easing( TWEEN.Easing.Quartic.InOut )
+              .onUpdate(() => {})
+              .onComplete(() => {}).start();
             },
         });
 
         //  add an animation that rotates the cube between 40-60 percent of scroll
         this.animationScripts.push({
-          start: 10,
-          end: 30,
+          start: 5,
+          end: 50,
           func: () => {
-            console.log('fire 2')
-              // const coords = {
-              //   x: this.camera.position.x,
-              //   y: this.camera.position.y,
-              //   z: this.camera.position.z,
-              // };
+            console.log('fire 2');
+            new TWEEN.Tween(this.sceneCenter)
+            .to({
+              x: 0.3,
+              y: 0,
+              z: 0,
+            }, 1500)
+            .easing( TWEEN.Easing.Quartic.InOut ).start();
 
-              new TWEEN.Tween(this.camera)
-              .to({
-                position: {
-                  x: 2,
-                  y: 2,
-                  z: 3,
-                }
-              }, 800)
-              .easing( TWEEN.Easing.Quadratic.InOut )
-              .onUpdate(() => {
-                // this.camera.updateProjectionMatrix()
-                // const percentage = this.lerp(0, 5, this.scalePercent(60, 80)) * 0.000001;
-                // console.log(percentage)
-                // this.camera.position.x = this.lerp(0, 5, this.scalePercent(60, 80))
-                // this.camera.position.set(this.lerp(0, 5, this.scalePercent(60, 80)), 1, 2);
-                // this.camera.position.set(coords.x, coords.y, 3);
-                // this.camera.position.x = this.lerp(0, 5, this.scalePercent(60, 80))
-              })
-              .start();
-          },
-        });
-
-        this.animationScripts.push({
-          start: 60,
-          end: 80,
-          func: () => {
-            this.camera.position.x = this.lerp(0, 5, this.scalePercent(60, 80))
+            new TWEEN.Tween(this.camera)
+            .to({
+              position: {
+                x: 1,
+                y: 0,
+                z: this.lerp(1, -20, this.scalePercent(60, 80) * 0.05),
+              }
+            }, 1500)
+            .onStart(() => {})
+            .easing( TWEEN.Easing.Quartic.InOut )
+            .onUpdate(() => {})
+            .start();
           },
         });
       },
       playScrollAnimations() {
         this.animationScripts.forEach((item) => {
           if (this.scrollPercent >= item.start && this.scrollPercent < item.end) {
-                item.func();
-            }
+            item.func();
+          }
         })
       },
       lerp(x, y, a) {
@@ -160,7 +147,7 @@
 				const sprite = new THREE.TextureLoader().load( '/disc.png' );
 				const vertices = [];
 
-				for ( let i = 0; i < 70000; i ++ ) {
+				for ( let i = 0; i < 80000; i ++ ) {
 
 					const x = 100 * Math.random() - 50;
 					const y = 100 * Math.random() - 50;
@@ -188,7 +175,7 @@
       },
       init() {
         this.camera = new THREE.PerspectiveCamera( 15, window.innerWidth / window.innerHeight, 0.1, 30 );
-        this.camera.position.z = 2;
+        this.camera.position.z = 1.5;
         this.scene = new THREE.Scene();
         this.geometry = new THREE.SphereGeometry( 0.2, 80, 80 );
         this.texture = new THREE.TextureLoader().load('/2k_mars.jpg')
@@ -199,7 +186,6 @@
         });
         this.sceneCenter = new THREE.Vector3(0, 0, 0);
         this.spotLight = new THREE.SpotLight( 0xffffff );
-        // this.spotLight.position.set( 100, 1500, 800 );
         this.spotLight.position.set( 0, 4, -3 );
 
         this.spotLight.castShadow = true;

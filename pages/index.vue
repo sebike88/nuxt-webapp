@@ -2,6 +2,7 @@
   <div>
     <HomeBackground/>
     <Tutorial/>
+    <Tutorial/>
   </div>
 </template>
 
