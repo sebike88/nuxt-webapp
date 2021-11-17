@@ -1,9 +1,9 @@
 <template>
   <div
     ref="canvas"
-    class="min-h-screen bg-gray-100 sm:pt-0 w-full relative"
+    class="home-background min-h-screen bg-gray-100 sm:pt-0 w-full fixed"
   >
-
+  <div class="home-background__bg absolute w-full h-full"></div>
   </div>
 </template>
 
@@ -22,8 +22,10 @@
         sceneCenter: {},
         renderer: {},
         geometry: {},
+        gridGeometry: {},
         particleGeometry: {},
         material: {},
+        orbitControls: {},
         texture: {},
         mesh: {},
         spotLight: {},
@@ -32,6 +34,11 @@
         scrollPercent: 0,
         animationScripts: [],
       };
+    },
+    created() {
+      this.$nuxt.$on('slide-change', (index) => {
+        this.playScrollAnimations(index);
+      });
     },
     mounted() {
       this.init();
@@ -49,9 +56,6 @@
             ((document.documentElement.scrollHeight || document.body.scrollHeight) -
             document.documentElement.clientHeight)
           ) * 100;
-
-        this.playScrollAnimations();
-        console.log('scroll')
       },
       addAnimationScripts() {
         //  add an animation that moves the cube through first 40 percent of scroll
@@ -86,7 +90,6 @@
           start: 5,
           end: 50,
           func: () => {
-            console.log('fire 2');
             new TWEEN.Tween(this.sceneCenter)
             .to({
               x: 0.3,
@@ -109,13 +112,36 @@
             .start();
           },
         });
+
+        this.animationScripts.push({
+          start: 5,
+          end: 50,
+          func: () => {
+            new TWEEN.Tween(this.sceneCenter)
+            .to({
+              x: 0,
+              y: 0.3,
+              z: 0,
+            }, 1500)
+            .easing( TWEEN.Easing.Quartic.InOut ).start();
+
+            new TWEEN.Tween(this.camera)
+            .to({
+              position: {
+                x: 1.2,
+                y: 0,
+                z: 1.5,
+              }
+            }, 1500)
+            .onStart(() => {})
+            .easing( TWEEN.Easing.Quartic.InOut )
+            .onUpdate(() => {})
+            .start();
+          },
+        });
       },
-      playScrollAnimations() {
-        this.animationScripts.forEach((item) => {
-          if (this.scrollPercent >= item.start && this.scrollPercent < item.end) {
-            item.func();
-          }
-        })
+      playScrollAnimations(index) {
+        this.animationScripts[index].func();
       },
       lerp(x, y, a) {
         return (1 - a) * x + a * y;
@@ -127,6 +153,7 @@
         requestAnimationFrame(this.animation);
         this.mesh.rotation.x = time / -10000;
         this.mesh.rotation.y = time / -50000;
+        this.orbitControls.update()
         this.renderer.render( this.scene, this.camera );
 				this.camera.lookAt( this.sceneCenter );
         TWEEN.update();
@@ -147,11 +174,11 @@
 				const sprite = new THREE.TextureLoader().load( '/disc.png' );
 				const vertices = [];
 
-				for ( let i = 0; i < 80000; i ++ ) {
+				for ( let i = 0; i < 90000; i++ ) {
 
-					const x = 100 * Math.random() - 50;
-					const y = 100 * Math.random() - 50;
-					const z = 100 * Math.random() - 50;
+					const x = 80 * Math.random() - 50;
+					const y = 80 * Math.random() - 50;
+					const z = 80 * Math.random() - 50;
 					vertices.push( x, y, z );
 
 				}
@@ -173,12 +200,31 @@
 				const particles = new THREE.Points( this.particleGeometry, material );
 				this.scene.add( particles );
       },
-      init() {
+      setGridGeometry() {
+        const faceColorMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: THREE.FaceColors } );
+        const sphereGeometry = new THREE.SphereGeometry(0.25,  24, 24);
+        for ( let i = 0; i < sphereGeometry.faces.length; i++ ) 
+	      {
+          const face = sphereGeometry.faces[ i ];	
+          face.color.setRGB( 0, 0, 0.8 * Math.random() + 0.2 );
+        }
+        const sphere = new THREE.Mesh( sphereGeometry, faceColorMaterial );
+        sphere.position.set(0, 0, 0);
+        this.scene.add(sphere);
+      },
+      async setOrbitControls() {
+        const {OrbitControls} = await import('three/examples/jsm/controls/OrbitControls')
+        this.orbitControls = new OrbitControls(this.camera, this.renderer.domElement)
+        this.orbitControls.autoRotate = true
+        this.orbitControls.autoRotateSpeed = 1;
+      },
+      async init() {
         this.camera = new THREE.PerspectiveCamera( 15, window.innerWidth / window.innerHeight, 0.1, 30 );
         this.camera.position.z = 1.5;
         this.scene = new THREE.Scene();
         this.geometry = new THREE.SphereGeometry( 0.2, 80, 80 );
         this.texture = new THREE.TextureLoader().load('/2k_mars.jpg')
+        this.textureBump = new THREE.TextureLoader().load('/marsbump1k.jpg')
         this.material = new THREE.MeshStandardMaterial({
           map: this.texture,
           bumpMap: this.texture,
@@ -200,19 +246,24 @@
         this.mesh = new THREE.Mesh( this.geometry, this.material );
         this.mesh.rotation.y = 300;
         this.scene.add( this.mesh );
+        
 
         this.renderer = new THREE.WebGLRenderer( {
           antialias: true,
           alpha: false,
         });
-        this.renderer.toneMapping = THREE.CineonToneMapping;
-        this.renderer.toneMappingExposure = 0.4;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 0.6;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.setSize( window.innerWidth, window.innerHeight );
-        // this.renderer.setAnimationLoop( this.animation );
-        this.animation()
+        await this.setOrbitControls()
+        this.animation();
 	      this.$refs.canvas.appendChild( this.renderer.domElement );
       },
     }
   }
 </script>
+
+<style lang="scss">
+@import "~/assets/scss/components/HomeBackground.scss";
+</style>
